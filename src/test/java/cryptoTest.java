@@ -1,79 +1,83 @@
 import driver.Driver;
 import org.openqa.selenium.By;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.Assert;
+import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import utils.ParserToFloat;
+import utils.StringReplacer;
 
-import java.util.Iterator;
 import java.util.List;
 
 public class cryptoTest {
     private Driver chromeDriver;
     private WebDriver driver;
-    private final String PRICE = "UNUS SED LEO";
+    private String link;
+    private String actualLink;
+    private Actions actions;
+    private ParserToFloat parser;
+    private StringReplacer replacer;
+    private float temp;
+    private String partOfLink;
+    private WebDriverWait wait;
 
     @BeforeMethod
     public void setUp(){
         chromeDriver = Driver.getInstance();
         driver = chromeDriver.getDriver();
+        wait = new WebDriverWait(driver, 10);
+        actions = new Actions(driver);
+        parser = new ParserToFloat();
+        replacer = new StringReplacer();
     }
-
 
     @Test
     public void cryptoTest(){
         //grab table
         driver.get("https://coinmarketcap.com/");
         WebElement table = driver.findElement(By.id("currencies"));
-        WebElement elem = driver.findElement(By.cssSelector("tr > td:nth-child(8)"));
 
-       /* List<WebElement> allRows = table.findElements(By.tagName("tr"));
-        System.out.println(allRows.size());*/
+        //close cookie inform message
+        driver.findElement(By.cssSelector("body > div.banner-alert.banner-alert-fixed-bottom.js-cookie-policy-banner > div.banner-alert-close > button > span")).click();
 
-        /*for (WebElement row: allRows){
-            List<WebElement> pricesCells= row.findElements(By.cssSelector("tr > td:nth-child(4)"));
-            List<WebElement> pricesCells= row.findElements(By.cssSelector("tr > td"));
+        List<WebElement> allRows = table.findElements(By.cssSelector("tbody > tr"));
 
-            for (WebElement cell: pricesCells){
-                if (cell.findElements(By.cssSelector("td:nth-child(2)")).equals(PRICE)){
-                    System.out.println(cell.getText());
-                }
-                else System.out.println("not found");
-                System.out.println(cell.getText());
-            }
-        }*/
+        for (WebElement row: allRows) {
+            WebElement rowsElem = wait.until(ExpectedConditions.visibilityOf(row.findElement(By.cssSelector("td:nth-child(1)"))));
+            actions.moveToElement(rowsElem).perform();
 
-        List<WebElement> col = table.findElements(By.className("currency-name-container link-secondary"));
+            temp = parser.convertToFloat
+                    (replacer.removeSymbols(row.findElement(By.cssSelector("td:nth-child(4)")).getText()));
 
-        Iterator<WebElement> iter = col.iterator();
+                if (700 < temp & temp < 720) {
 
-        while (iter.hasNext()){
+                    partOfLink = row.findElement(By.cssSelector("td:nth-child(2)")).getText().toLowerCase();
 
-            System.out.println(iter.next().getText());
+                    WebElement graphColumn = row.findElement(By.cssSelector("td:nth-child(8) > a"));
+                    graphColumn.click();
+                    break;
 
-            /*if (iter.next().getText().equals(PRICE)){
-                elem.click();
-                break;
-            }
-            else {
-                System.out.println("not found");
-            }*/
 
-            /*String values = iter.next().getText();
+                } else System.out.println("We search shines: " + temp);
 
-            if (values.equals(PRICE)){
-                elem.click();
-                System.out.println("not found");
-                break;
-            }
-
-            else {
-                System.out.println("not found");
-            }*/
         }
 
+        actualLink = "https://coinmarketcap.com/currencies/"+
+                partOfLink+"/#charts";
 
+        link = driver.getCurrentUrl();
 
+        Assert.assertEquals( link, actualLink);
+    }
+
+    @AfterTest(alwaysRun = true)
+    public void tearDown(){
         driver.quit();
         driver = null;
     }
